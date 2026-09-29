@@ -1,0 +1,9 @@
+{
+  "name": "AURORA Mission Ops",
+  "short_name": "AURORA",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#07090d",
+  "theme_color": "#0e8f7b",
+  "description": "ClearGlass multi-INT fusion common operating picture"
+}
