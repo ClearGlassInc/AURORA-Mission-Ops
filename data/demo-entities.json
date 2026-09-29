@@ -1,0 +1,78 @@
+{
+  "generated": "2026-09-28T20:30:00-04:00",
+  "classification": "UNCLASSIFIED//PUBLIC",
+  "entities": [
+    {
+      "id": "ac-cfs-demo-1",
+      "type": "aircraft",
+      "name": "Demo civil track YYZ corridor",
+      "lat": 43.6777,
+      "lon": -79.6248,
+      "alt_m": 10668,
+      "heading": 270,
+      "speed_mps": 230,
+      "ts": "2026-09-28T20:28:00-04:00",
+      "sources": [{ "name": "demo", "url": "https://github.com/ClearGlassInc/AURORA-Mission-Ops" }],
+      "confidence": 0.55,
+      "classification": "UNCLASSIFIED//PUBLIC",
+      "identity": { "icao24": "c01742", "callsign": "DEMO1" },
+      "tags": ["aviation", "demo", "gta"],
+      "score": 22
+    },
+    {
+      "id": "vs-slc-demo-1",
+      "type": "vessel",
+      "name": "Demo Great Lakes bulk carrier",
+      "lat": 43.3,
+      "lon": -79.8,
+      "heading": 45,
+      "speed_mps": 6,
+      "ts": "2026-09-28T20:20:00-04:00",
+      "sources": [{ "name": "demo", "url": "https://github.com/ClearGlassInc/AURORA-Mission-Ops" }],
+      "confidence": 0.5,
+      "classification": "UNCLASSIFIED//PUBLIC",
+      "identity": { "mmsi": "316000000" },
+      "tags": ["maritime", "demo", "burlington"],
+      "score": 18
+    },
+    {
+      "id": "eq-usgs-demo-1",
+      "type": "seismic",
+      "name": "Demo seismic marker (Pacific)",
+      "lat": 54.1,
+      "lon": -162.2,
+      "ts": "2026-09-28T18:02:00-04:00",
+      "sources": [{ "name": "USGS style demo", "url": "https://earthquake.usgs.gov/" }],
+      "confidence": 0.7,
+      "classification": "UNCLASSIFIED//PUBLIC",
+      "tags": ["seismic", "demo"],
+      "score": 40
+    },
+    {
+      "id": "cy-grid-demo-1",
+      "type": "cyber",
+      "name": "GridShield watch — public CVE noise cluster",
+      "lat": 45.4215,
+      "lon": -75.6972,
+      "ts": "2026-09-28T20:10:00-04:00",
+      "sources": [{ "name": "demo", "url": "https://github.com/ClearGlassInc/AURORA-Mission-Ops" }],
+      "confidence": 0.35,
+      "classification": "UNCLASSIFIED//PUBLIC",
+      "tags": ["cyber", "gridshield", "ottawa"],
+      "score": 31
+    },
+    {
+      "id": "al-choke-demo-1",
+      "type": "alert",
+      "name": "Chokepoint density exercise — Cabot Strait",
+      "lat": 47.23,
+      "lon": -59.73,
+      "ts": "2026-09-28T19:55:00-04:00",
+      "sources": [{ "name": "demo", "url": "https://github.com/ClearGlassInc/AURORA-Mission-Ops" }],
+      "confidence": 0.4,
+      "classification": "UNCLASSIFIED//PUBLIC",
+      "tags": ["alert", "maritime", "exercise"],
+      "score": 44
+    }
+  ]
+}
