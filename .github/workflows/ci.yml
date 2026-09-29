@@ -1,0 +1,35 @@
+name: Schema and COP CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate demo entities
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          schema = json.loads(Path("schema/fusion-entity.schema.json").read_text())
+          data = json.loads(Path("data/demo-entities.json").read_text())
+          assert data["classification"] == "UNCLASSIFIED//PUBLIC"
+          required = schema["required"]
+          for e in data["entities"]:
+              missing = [k for k in required if k not in e]
+              assert not missing, (e.get("id"), missing)
+              assert e["classification"] == "UNCLASSIFIED//PUBLIC"
+          print(f"ok {len(data['entities'])} entities")
+          PY
+      - name: Guard index.html
+        run: |
+          test -f index.html
+          grep -q "UNCLASSIFIED" index.html
+          grep -q "Not affiliated with CSIS" index.html
