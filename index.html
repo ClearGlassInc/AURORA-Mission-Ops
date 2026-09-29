@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AURORA Mission Ops | ClearGlass multi-INT COP</title>
+  <meta name="description" content="ClearGlass AURORA common operating picture: public-data multi-INT fusion, scored alerts, and TAK interoperability notes. Not a Government of Canada system." />
+  <meta name="theme-color" content="#07090d" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="canonical" href="https://clearglassinc.github.io/AURORA-Mission-Ops/" />
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"AURORA Mission Ops","applicationCategory":"SecurityApplication","operatingSystem":"Web","creator":{"@type":"Organization","name":"ClearGlass Inc.","url":"https://www.clearglassinc.com"}}</script>
+  <style>
+    :root { --bg:#07090d; --panel:rgba(10,16,22,.86); --line:rgba(120,220,200,.18); --text:#d7efe8; --dim:#7f9a93; --teal:#2ee6c4; --amber:#f0b429; --font:"Segoe UI","IBM Plex Sans",sans-serif; }
+    * { box-sizing:border-box; } html,body { margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--font); }
+    #map { position:absolute;inset:0; }
+    header { position:absolute;top:12px;left:12px;right:12px;z-index:2;display:flex;justify-content:space-between;gap:12px;pointer-events:none; }
+    .glass { pointer-events:auto;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(12px);border-radius:10px;padding:10px 14px; }
+    .brand { font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal); }
+    .sub { font-size:11px;color:var(--dim);margin-top:3px; }
+    .badge { display:inline-block;font-size:10px;letter-spacing:.08em;color:var(--amber);border:1px solid rgba(240,180,41,.4);padding:2px 6px;border-radius:999px; }
+    aside { position:absolute;top:86px;left:12px;width:min(320px,calc(100vw - 24px));z-index:2; }
+    aside h2, .rail h2 { margin:0 0 8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim); }
+    label.layer { display:flex;gap:8px;align-items:center;font-size:13px;margin:6px 0;cursor:pointer; }
+    .rail { position:absolute;top:86px;right:12px;width:min(340px,calc(100vw - 24px));z-index:2;max-height:calc(100vh - 110px);overflow:auto; }
+    .alert { border-left:3px solid var(--teal);padding:8px 0 8px 10px;margin:8px 0; }
+    .alert.hi { border-color:var(--amber); }
+    .alert .t { font-size:12px; } .alert .m { font-size:11px;color:var(--dim); }
+    footer { position:absolute;bottom:10px;left:12px;right:12px;z-index:2;font-size:11px;color:var(--dim);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap; }
+    footer a { color:var(--teal); }
+    button.live { background:transparent;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px; }
+    button.live.on { border-color:var(--teal);color:var(--teal); }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <header>
+    <div class="glass"><div class="brand">AURORA Mission Ops</div><div class="sub">ClearGlass multi-INT fusion · UNCLASSIFIED//PUBLIC</div></div>
+    <div class="glass"><span class="badge">NOT AFFILIATED WITH CSIS</span><div class="sub" id="clock"></div></div>
+  </header>
+  <aside class="glass">
+    <h2>Layers</h2>
+    <label class="layer"><input type="checkbox" data-layer="aircraft" checked /> Aviation (demo / OpenSky)</label>
+    <label class="layer"><input type="checkbox" data-layer="vessel" checked /> Maritime</label>
+    <label class="layer"><input type="checkbox" data-layer="seismic" checked /> Seismic</label>
+    <label class="layer"><input type="checkbox" data-layer="cyber" checked /> Cyber-physical</label>
+    <label class="layer"><input type="checkbox" data-layer="alert" checked /> Scored alerts</label>
+    <p class="sub">Modules: MDA · Air picture · Crisis fusion · SSA tabletop · GridShield watch</p>
+    <button class="live" id="liveBtn" type="button">Enable OpenSky (public ADS-B)</button>
+  </aside>
+  <section class="rail glass" id="rail"><h2>Alert rail</h2></section>
+  <footer>
+    <div>ClearGlass Inc. · <a href="https://github.com/ClearGlassInc/AURORA-Mission-Ops">source</a></div>
+    <div><a href="docs/ETHICS.md">ethics</a> · <a href="docs/ARCHITECTURE.md">architecture</a></div>
+  </footer>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script>
+    const clock = document.getElementById("clock");
+    setInterval(() => { clock.textContent = new Date().toISOString(); }, 1000);
+    const map = new maplibregl.Map({
+      container: "map",
+      style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+      center: [-79.82, 43.34], zoom: 4.2
+    });
+    map.addControl(new maplibregl.NavigationControl(), "bottom-right");
+    const colors = { aircraft:"#2ee6c4", vessel:"#6ea8ff", seismic:"#f0b429", cyber:"#c084fc", alert:"#ff5d5d" };
+    function toGeoJSON(entities) {
+      return { type:"FeatureCollection", features: entities.map(e => ({ type:"Feature", geometry:{ type:"Point", coordinates:[e.lon,e.lat] }, properties:e })) };
+    }
+    let entities = [];
+    function renderRail(list) {
+      const rail = document.getElementById("rail");
+      const alerts = [...list].sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,12);
+      rail.innerHTML = "<h2>Alert rail</h2>" + alerts.map(a => `<div class="alert ${a.score>35?'hi':''}"><div class="t">${a.name}</div><div class="m">${a.type} · score ${a.score||0} · ${a.classification}</div></div>`).join("");
+    }
+    function applyFilters() {
+      const on = {};
+      document.querySelectorAll("input[data-layer]").forEach(el => { on[el.dataset.layer] = el.checked; });
+      const filtered = entities.filter(e => on[e.type] !== false);
+      const src = map.getSource("entities");
+      if (src) src.setData(toGeoJSON(filtered));
+      renderRail(filtered);
+    }
+    map.on("load", async () => {
+      const payload = await (await fetch("data/demo-entities.json")).json();
+      entities = payload.entities;
+      map.addSource("entities", { type:"geojson", data: toGeoJSON(entities) });
+      map.addLayer({ id:"entities-circle", type:"circle", source:"entities", paint:{
+        "circle-radius":6,
+        "circle-color":["match",["get","type"],"aircraft",colors.aircraft,"vessel",colors.vessel,"seismic",colors.seismic,"cyber",colors.cyber,"alert",colors.alert,"#88a"],
+        "circle-stroke-width":1,"circle-stroke-color":"#04110e"
+      }});
+      map.on("click","entities-circle",(e)=>{
+        const p = e.features[0].properties;
+        new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<strong>${p.name}</strong><br/>${p.type}<br/>confidence ${p.confidence}<br/>${p.classification}`).addTo(map);
+      });
+      applyFilters();
+    });
+    document.querySelectorAll("input[data-layer]").forEach(el => el.addEventListener("change", applyFilters));
+    document.getElementById("liveBtn").addEventListener("click", async (ev) => {
+      const btn = ev.currentTarget; btn.disabled = true; btn.textContent = "Contacting OpenSky…";
+      try {
+        const r = await fetch("https://opensky-network.org/api/states/all?lamin=41&lomin=-83&lamax=46&lomax=-74");
+        if (!r.ok) throw new Error("opensky " + r.status);
+        const j = await r.json();
+        const live = (j.states||[]).slice(0,80).map((s,i)=>({
+          id:"opensky-"+(s[0]||i), type:"aircraft", name:((s[1]||"ADSB").trim()||"OpenSky track"),
+          lon:s[5], lat:s[6], alt_m:s[7]||s[13]||0, heading:s[10]||0, speed_mps:s[9]||0,
+          ts:new Date((s[4]||Date.now()/1000)*1000).toISOString(),
+          sources:[{name:"OpenSky Network",url:"https://opensky-network.org"}],
+          confidence:0.6, classification:"UNCLASSIFIED//PUBLIC",
+          identity:{icao24:s[0],callsign:(s[1]||"").trim()}, tags:["aviation","opensky"], score:20
+        })).filter(e => Number.isFinite(e.lat) && Number.isFinite(e.lon));
+        entities = entities.filter(e => e.id.indexOf("opensky-")!==0).concat(live);
+        applyFilters(); btn.textContent = "OpenSky live ("+live.length+")"; btn.classList.add("on");
+      } catch (err) { btn.textContent = "OpenSky blocked — demo only"; }
+      finally { btn.disabled = false; }
+    });
+  </script>
+</body>
+</html>
